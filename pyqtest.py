@@ -7,6 +7,9 @@ from network import Network
 To use git:
 git status
 git fetch
+git log HEAD..origin/main   # remote has - local doesnt
+git log origin/main..HEAD   # local has - remote dosent
+
 
     Pull:
     git pull
@@ -16,6 +19,8 @@ git fetch
     Push:
 git add .
 git commit -m "Edit message info"
+OR
+git commit -a -m "Edit message info"
 git push
 
     Branch:
@@ -35,7 +40,7 @@ git push
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    net: Network
+    nets: Network
 
 
     def __init__(self, net: Network) -> None:
