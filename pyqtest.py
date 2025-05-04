@@ -5,6 +5,9 @@ from network import Network
 
 """
 To use git:
+git status
+git fetch
+
     Pull:
     git pull
     OR OPTIONAL/FIRST-TIME LINK
