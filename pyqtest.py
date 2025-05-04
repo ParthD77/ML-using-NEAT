@@ -3,6 +3,33 @@ from PyQt6 import QtCore, QtGui, QtWidgets, uic
 from PyQt6.QtCore import Qt
 from network import Network
 
+"""
+To use git:
+    Pull:
+    git pull
+    OR OPTIONAL/FIRST-TIME LINK
+    git pull link
+
+    Push:
+git add .
+git commit -m "Edit message info"
+git push
+
+    Branch:
+git checkout -b new-feature-name
+
+git add .
+git commit -m "added new feature info"
+
+git push -u origin new-feature-name
+
+    Merge Branch to main:
+git checkout main
+git pull
+git merge new-feature-name
+git push
+"""
+
 
 class MainWindow(QtWidgets.QMainWindow):
     net: Network
