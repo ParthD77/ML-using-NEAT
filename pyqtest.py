@@ -5,6 +5,7 @@ from network import Network
 
 """
 To use git:
+git diff origin/main
 git status
 git fetch
 git log HEAD..origin/main   # remote has - local doesnt
@@ -40,7 +41,7 @@ git push
 
 
 class MainWindow(QtWidgets.QMainWindow):
-    nets: Network
+    net: Network
 
 
     def __init__(self, net: Network) -> None:
