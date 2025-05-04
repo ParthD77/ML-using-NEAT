@@ -13,7 +13,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.net = net
 
         self.label = QtWidgets.QLabel()
-        canvas = QtGui.QPixmap(1000, 800)
+        canvas = QtGui.QPixmap(1200, 700)
         canvas.fill(Qt.GlobalColor.white)
         self.label.setPixmap(canvas)
         self.setCentralWidget(self.label)
@@ -42,6 +42,6 @@ if __name__ == "__main__":
     net = Network(2, 2)
     net.process_network([1, 1])
     window = MainWindow(net)
-    window.setGeometry(400, 150, 1000, 800)
+    window.setGeometry(400, 150, 1200, 700)
     window.show()
     app.exec()
