@@ -42,6 +42,6 @@ if __name__ == "__main__":
     net = Network(2, 2)
     net.process_network([1, 1])
     window = MainWindow(net)
-    window.setGeometry(400, 150, 1000, 700)
+    window.setGeometry(400, 150, 1200, 700)
     window.show()
     app.exec()
