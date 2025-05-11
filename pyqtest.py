@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import *
 from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from PyQt6.QtGui import QPainter, QColor, QPen
 from PyQt6.QtCore import Qt
 from network import Network
 from typing import Tuple
@@ -40,29 +41,23 @@ git merge new-feature-name
 git push
 """
 
+"""
+TODO:
+    Find a  way to dispaly the network:
+        how to know the height of each node?
+    Different mutation than just random (gradient descent OR breeding OR other)
 
-class MainWindow(QtWidgets.QMainWindow):
+"""
+
+class NetworkWidget(QWidget):
     net: Network
 
 
-    def __init__(self, net: Network) -> None:
+    def __init__(self, net: Network, width: int, height: int) -> None:
         super().__init__()
         self.net = net
+        self.setFixedSize(width, height) # Set canvas size
 
-        self.label = QtWidgets.QLabel()
-        canvas = QtGui.QPixmap(1200, 700)
-        canvas.fill(Qt.GlobalColor.white)
-        self.label.setPixmap(canvas)
-        self.setCentralWidget(self.label)
-        #self.draw_something()
-
-    def draw_something(self) -> None:          #test
-        canvas = self.label.pixmap()
-        painter = QtGui.QPainter(canvas)
-        painter.drawLine(70, 45, 100, 45)
-        painter.drawEllipse(20, 20, 50, 50)
-        painter.end()
-        self.label.setPixmap(canvas)
 
 
     def get_net_info(self) -> Tuple[int, int]:
@@ -83,16 +78,66 @@ class MainWindow(QtWidgets.QMainWindow):
         return (layers, height)
 
 
-    def draw_network(self) -> None:
-        canvas = self.label.pixmap()
-        canvas.fill(Qt.GlobalColor.white)
-        painter = QtGui.QPainter(canvas)
-        info = self.get_net_info()
-        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor("#1E1E1E"))  # background
 
+        # box aroudn network
+        pen_border = QPen(QColor("black"))
+        pen_border.setWidth(5)
+        painter.setPen(pen_border)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRect(self.rect())
+
+
+        layers, height = self.get_net_info()
+
+        # Example: Draw nodes based on their depth (simple horizontal spacing)
         for node in self.net.nodes:
-            painter.drawEllipse(node.depth*50, 100, 50, 50)
-        
+            x = node.depth * 150 + 50
+            y = 100 + (1 * 70)  # You might want to improve this positioning
+            painter.setBrush(QColor("blue"))
+            painter.drawEllipse(x, y, 50, 50)
+
+        painter.end()
+
+
+
+class MainWindow(QMainWindow):
+
+
+    def __init__(self, net: Network, x: int, y: int, width: int, height: int) -> None:
+        super().__init__()
+        self.setGeometry(x, y, width, height)
+        self.setWindowTitle("NEAT Network")
+
+        container = QtWidgets.QWidget()
+        self.setCentralWidget(container)
+
+
+        net_widht = width//2
+        net_height = height//2
+        layout = QGridLayout()                                                  
+        canvas = NetworkWidget(net, net_widht, net_height)
+        layout.addWidget(canvas, 0, 0)  # widget, row, column
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        container.setLayout(layout)
+
+
+    # Set main frame to background black
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor("#1E1E1E"))
+        painter.end()
+
+        #self.draw_something()
+
+
+    def draw_something(self) -> None:          #test
+        canvas = self.label.pixmap()
+        painter = QtGui.QPainter(canvas)
+        painter.drawLine(70, 45, 100, 45)
+        painter.drawEllipse(20, 20, 50, 50)
         painter.end()
         self.label.setPixmap(canvas)
 
@@ -103,9 +148,8 @@ if __name__ == "__main__":
     app = QApplication([])
     network = Network(2, 2)
     network.process_network([1, 1])
-    window = MainWindow(network)
-    window.setGeometry(400, 150, 1200, 700)
+    window = MainWindow(network, 400, 150, 1200, 700)
 
-    window.draw_network()
+   # window.draw_network()
     window.show()
     app.exec()
