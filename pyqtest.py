@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import *
 from PyQt6 import QtCore, QtGui, QtWidgets, uic
 from PyQt6.QtCore import Qt
 from network import Network
+from typing import Tuple
 
 """
 To use git:
@@ -53,7 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         canvas.fill(Qt.GlobalColor.white)
         self.label.setPixmap(canvas)
         self.setCentralWidget(self.label)
-        self.draw_something()
+        #self.draw_something()
 
     def draw_something(self) -> None:          #test
         canvas = self.label.pixmap()
@@ -63,21 +64,48 @@ class MainWindow(QtWidgets.QMainWindow):
         painter.end()
         self.label.setPixmap(canvas)
 
+
+    def get_net_info(self) -> Tuple[int, int]:
+        """
+        layers = largest node depth (0 inclusive)
+        height = largest count of nodes in any given layer
+        """
+        layers = 0
+
+        depths = {}
+        for node in self.net.nodes:
+            layers = max(layers, node.depth)
+            depths.setdefault(node.depth, 0)
+            depths[node.depth] += 1
+
+        height = max(depths.values())
+
+        return (layers, height)
+
+
     def draw_network(self) -> None:
         canvas = self.label.pixmap()
         canvas.fill(Qt.GlobalColor.white)
         painter = QtGui.QPainter(canvas)
+        info = self.get_net_info()
+        
 
         for node in self.net.nodes:
-            painter.drawEllipse(node.depth, 100, 50, 50)
+            painter.drawEllipse(node.depth*50, 100, 50, 50)
+        
+        painter.end()
+        self.label.setPixmap(canvas)
+
 
 
 
 if __name__ == "__main__":
     app = QApplication([])
-    net = Network(2, 2)
-    net.process_network([1, 1])
-    window = MainWindow(net)
+    network = Network(2, 2)
+    network.process_network([1, 1])
+    window = MainWindow(network)
     window.setGeometry(400, 150, 1200, 700)
+
+    window.draw_network()
     window.show()
     app.exec()
