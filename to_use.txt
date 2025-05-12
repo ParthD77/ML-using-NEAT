@@ -1,0 +1,3 @@
+To run on your own input data:
+    Create a new class that inherets from main
+    implement get_fitness
