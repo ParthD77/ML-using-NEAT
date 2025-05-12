@@ -15,7 +15,7 @@ class Network():
     """
     nodes: List[Node] 
     nerves: List[Nerve]
-
+    score: int
 
     def __init__(self, input_size: int = 1, output_size: int = 1) -> None:
         # default network connect all input to output
@@ -34,6 +34,7 @@ class Network():
 
         self.nodes = nodes
         self.nerves = nerves
+        self.score = 0
         self.set_depth()
     
 
@@ -43,7 +44,7 @@ class Network():
         self.nerves = nerves
 
 
-    def process_network(self, in_data: list[int]) -> list[int]:
+    def process_network(self, in_data: list[int]) -> None:
         self.set_depth()
         # reset all node values and set input node values
         i = 0
@@ -61,6 +62,16 @@ class Network():
         for nerve in self.nerves:
             nerve.process_nerve()
     
+
+    def get_output(self) -> List[float]:
+        self.sort_nodes_depth()
+        output = []
+        for node in self.nodes:
+            if node.type == 2:
+                output.append(node.value)
+        return output
+
+
     def mutate_network(self) -> None:
         """ Chances of mutation:
         80% weight mutation (10% of weights get mutated)
@@ -137,9 +148,6 @@ class Network():
                 self.nerves.remove(random.choice(self.nerves))
         
                
-            
-
-
     def sort_nerves(self) -> None:
         self.set_depth()
         # helper callable
@@ -189,8 +197,6 @@ class Network():
         for node in self.nodes:
             if node.type == 2:  # Output node
                 node.depth = max_depth
-        
-            
         
 
     def reset_depths(self) -> None:
