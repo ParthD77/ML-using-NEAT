@@ -1,6 +1,8 @@
 from typing import List
 from node import Node
 from nerve import Nerve
+import random
+import math
 
 
 class Network():
@@ -58,6 +60,84 @@ class Network():
         self.sort_nerves()
         for nerve in self.nerves:
             nerve.process_nerve()
+    
+    def mutate_network(self) -> None:
+        """ Chances of mutation:
+        80% weight mutation (10% of weights get mutated)
+        2% new node
+        2% remove a node
+        8% add a nerve
+        8% remove a nerve
+        * if mutation is not possible its skipped and no mutation happens
+        """
+        roll = random.randint(1, 100)
+        # weight mutation
+        if roll <= 80:
+            if self.nerves != []:
+                # 10% of weights get mutated
+                to_mutate = math.ceil(len(self.nerves)*0.1)
+                for i in range(to_mutate):
+                    random.choice(self.nerves).mutate_nerve
+
+        # new node
+        elif roll <= 88:
+            # only add node if possible
+            if self.nerves != []:
+                nerve = random.choice(self.nerves)
+                new_node = Node()
+                self.nodes.append(new_node) # add new node
+                # set new nerves and remove old
+                self.nerves.append(Nerve(nerve.start, new_node))
+                self.nerves.append(Nerve(new_node, nerve.end))
+                self.nerves.remove(nerve)
+                self.sort_nodes_depth()
+
+        # remove a node
+        elif roll <= 96: 
+            # only remove node if possible
+            internal_nodes = []
+            for node in self.nodes:
+                if node.type == 1:
+                    internal_nodes.append(node)
+
+            # if possible
+            if internal_nodes != []:
+                # choose a node
+                node_to_remove = random.choice(internal_nodes)
+                nerves_to_remove = []
+                # find all nerves that touch that node and remove them
+                for nerve in self.nerves:
+                    if nerve.start == node_to_remove or nerve.end == node_to_remove:
+                        nerves_to_remove.append(nerve)
+                for nerve in nerves_to_remove:
+                    self.nerves.remove(nerve)
+                self.sort_nodes_depth()
+                        
+                
+        # add a nerve
+        elif roll <= 98: 
+            # only add node if possible
+            # go thru every possible nerve location and get list of all missing nerves
+            # (L time complexity)
+            missing = []
+            for start in self.nodes:
+                for end in self.nodes:
+                    if start.depth < end.depth:
+                        for nerve in self.nerves:
+                            if not (nerve.start == start and nerve.end == end):
+                                missing.append((start, end))
+            # add a random selection from missing nerve list if not empty
+            if missing != []:
+                new_nerve_spots = random.choice(missing)
+                self.nerves.append(Nerve(new_nerve_spots[0], new_nerve_spots[1]))
+
+        # only remove nerve if possible
+        else:
+            if self.nerves != []:
+                self.nerves.remove(random.choice(self.nerves))
+        
+               
+            
 
 
     def sort_nerves(self) -> None:
@@ -103,6 +183,14 @@ class Network():
         for node in curr:
             node.depth = depth
         curr = next
+
+        # Ensure output nodes are always in the final layer
+        max_depth = max(max((node.depth for node in self.nodes if node.depth != -1)), 1)
+        for node in self.nodes:
+            if node.type == 2:  # Output node
+                node.depth = max_depth
+        
+            
         
 
     def reset_depths(self) -> None:

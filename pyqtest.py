@@ -48,8 +48,12 @@ TODO:
     Implement mutate network
     somehow have a main file (maybe this one?) that has x agents and computes everything and such,
         while  only displaying x network, adjustable values?
+
+    grading agents (BUG: networks currently spam nodes cause nothing stops it, maybe clean up or grade large networks harshly)
     
     Different mutation than just random (gradient descent OR breeding OR other)
+
+    Data clean up? (del temp variables once finished using)
 
 """
 
@@ -69,6 +73,7 @@ class NetworkWidget(QWidget):
         layers = largest node depth (0 inclusive)
         height = largest count of nodes in any given layer
         """
+        self.net.sort_nodes_depth()
         # Total # of layers (max depth)
         layers = 0
         # number of nodes per depth [0, count]
@@ -78,6 +83,9 @@ class NetworkWidget(QWidget):
         # for each node compare against max of node or stored layer
         # for each depth set to [0, 0] and increment second value [0, node per layer]
         for node in self.net.nodes:
+            # ensure useless nodes dont bloat drawing
+            if node.depth == -1:
+                continue
             layers = max(layers, node.depth)
             heights.setdefault(node.depth, [0, 0])
             heights[node.depth][1] += 1
@@ -89,9 +97,9 @@ class NetworkWidget(QWidget):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor("#1E1E1E"))  # background
 
-        # box aroudn network
+        # box around network
         pen_border = QPen(QColor("black"))
-        pen_border.setWidth(2)
+        pen_border.setWidth(3)
         painter.setPen(pen_border)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRect(self.rect())
@@ -117,6 +125,9 @@ class NetworkWidget(QWidget):
         # store each nodes position
         positions = {}
         for node in self.net.nodes:
+            # dont display disjoint nodes
+            if node.depth == -1:
+                continue
             # x = total space // total depth*node_depth
             x = max_x//(layers)*node.depth
             # total space // (layer height+1) * (already displayed nodes + 1(offset to center))
@@ -124,12 +135,16 @@ class NetworkWidget(QWidget):
             heights[node.depth][0] += 1
             # works cause splitting area into count + 1 gives enough slots in middle
             positions[node] = (x, y)
-            painter.setBrush(QColor("blue"))
+            painter.setBrush(QColor("#2196F3"))
             painter.drawEllipse(x, y, node_size, node_size)
     
 
         # set nerves position with offset for node
         for nerve in self.net.nerves:
+            # check if node that this nerve connects to wasnt drawn
+            if nerve.start not in positions or nerve.end not in positions:
+                continue
+
             start_x = positions[nerve.start][0] + node_size
             start_y = positions[nerve.start][1] + (node_size // 2)
             end_x = positions[nerve.end][0]
@@ -139,15 +154,17 @@ class NetworkWidget(QWidget):
             # pos weight = green, neg weight = red
             # |weight| determisn thickness
             if nerve.weight > 0:
-                painter.setPen(QPen(QColor("green"), 1+abs(nerve.weight * 2)))
+                painter.setPen(QPen(QColor("#00C853"), 1+abs(nerve.weight * 2)))
+            elif nerve.weight == 0:
+                painter.setPen(QPen(QColor("#B0BEC5"), 1+abs(nerve.weight * 2)))
             else:
-                painter.setPen(QPen(QColor("red"), 1+abs(nerve.weight * 2)))
+                painter.setPen(QPen(QColor("#D50000"), 1+abs(nerve.weight * 2)))
             
             painter.drawLine(start_x, start_y, end_x, end_y)
 
             if node_size >= 50:
                 # dispaly the weights only if enough space
-                painter.setPen(QColor("white"))  
+                painter.setPen(QColor("#FFFFFF"))  
                 font = painter.font()
                 font.setPointSize(10)
                 painter.setFont(font)
@@ -157,9 +174,12 @@ class NetworkWidget(QWidget):
                 weight_point = QPoint(weight_x, weight_y)
                 painter.drawText(weight_point, f"{nerve.weight:.2f}")
 
-                    
+        # draw node values
         if node_size >= 50:
             for node in self.net.nodes:
+                # if node wasnt drawn skip it
+                if node.depth == -1:
+                    continue
                 # Center the text on the node
                 # Calculate text position (centered)
                 text_x = positions[node][0] + node_size // 2
@@ -191,13 +211,17 @@ class MainWindow(QMainWindow):
         canvas = NetworkWidget(net, net_width, net_height)
         layout.addWidget(canvas, 0, 0)  # widget, row, column
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # TODO: maybe remove later?
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         container.setLayout(layout)
 
 
     # Set main frame to background black
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#1E1E1E"))
+        painter.fillRect(self.rect(), QColor("#2E2E2E"))
         painter.end()
 
         #self.draw_something()
@@ -217,9 +241,12 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication([])
     network = Network(2, 1)
+    for i in range(100):
+        network.mutate_network()
     network.process_network([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
     window = MainWindow(network, 400, 150, 1200, 700)
-
+    print(len(network.nodes))
+    print(len(network.nerves))
    # window.draw_network()
     window.show()
     app.exec()

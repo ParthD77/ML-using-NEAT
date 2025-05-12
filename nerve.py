@@ -18,12 +18,12 @@ class Nerve():
     
 
     def mutate_nerve(self) -> None:
-        # Reinitialization %15
-        if uniform(0, 1) <= 0.15:  
+        # Reinitialization %30
+        if uniform(0, 1) <= 0.30:  
             self.weight = uniform(-1, 1)
-        # Perturbation     %85
+        # Perturbation     %70
         else:
-            self.weight += uniform(-0.5, 0.5)
+            self.weight += uniform(-0.2, 0.2)
 
 
     
