@@ -1,9 +1,10 @@
+from __future__ import annotations
 from typing import List
 from node import Node
 from nerve import Nerve
 import random
 import math
-
+import copy
 
 class Network():
     # NOTES:
@@ -44,6 +45,13 @@ class Network():
         self.nerves = nerves
 
 
+    def relu(self, x: float) -> float:
+        return max(0.0, x)
+    
+    def sigmoid(self, x: float) -> float:
+        return 1 / (1 + math.exp(-x))
+
+
     def process_network(self, in_data: list[int]) -> None:
         self.set_depth()
         # reset all node values and set input node values
@@ -59,7 +67,13 @@ class Network():
         
         # sort in nerves start depth first and then process each nerve
         self.sort_nerves()
+        process_layer = 0
         for nerve in self.nerves:
+            while process_layer < nerve.start.depth:
+                process_layer += 1
+                for node in self.nodes:
+                    if node.depth == process_layer:
+                        node.value = self.relu(node.value)
             nerve.process_nerve()
     
 
@@ -92,6 +106,7 @@ class Network():
 
         # new node
         elif roll <= 88:
+            print("new_nofde")
             # only add node if possible
             if self.nerves != []:
                 nerve = random.choice(self.nerves)
@@ -147,8 +162,11 @@ class Network():
             if self.nerves != []:
                 self.nerves.remove(random.choice(self.nerves))
         
-               
+    
     def sort_nerves(self) -> None:
+        """
+        Sort based on start node depth
+        """
         self.set_depth()
         # helper callable
         def get_nerve_start_depth(nerve: Nerve) -> int:
@@ -208,7 +226,7 @@ class Network():
             else:
                 inputs.append(node)
         return inputs
-    
+
 
 
 
