@@ -15,15 +15,20 @@ class main():
 
     def __init__(self, input_size: int = 1, output_size: int = 1, count: int = 10) -> None:
         self.agents = []
-        for _ in range(len(count)):
+        for _ in range(count):
             self.agents.append(Network(input_size, output_size))
     
 
-    def run_agents(self, input: List[int]) -> List[float]:
+    def reset_scores(self):
+        for agent in self.agents:
+            agent.score = 0
+        
+
+    def run_agents(self, input: List[int]) -> List[List[float]]:
         output = []
         for network in self.agents:
             network.process_network(input)
-            output = network.get_output()
+            output.append(network.get_output())
         return output
 
 
@@ -45,7 +50,8 @@ class main():
         for agent in good_agents:
             for _ in range(9):
                 agent_copy = copy.deepcopy(agent)
-                self.agents.append(agent_copy.mutate_network())
+                agent_copy.mutate_network()
+                self.agents.append(agent_copy)
 
     
     def get_fitness(self):
