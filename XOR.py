@@ -18,7 +18,7 @@ class XOR(main):
         self.reset_scores()
         for i in range(2):
             for j in range(2):
-                output = self.run_agents([1, i, j])
+                output = self.run_agents([-1, i, j])
                 xor_result = i ^ j
                 for k in range(len(output)):
                     result = output[k]
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     display_network(xor.agents[13])
     display_network(xor.agents[0])
-    print(len(xor.agents[0].nodes), len(xor.agents[13].nodes))
+
 
 
 

@@ -109,13 +109,22 @@ class Network():
             print("new_nofde")
             # only add node if possible
             if self.nerves != []:
-                nerve = random.choice(self.nerves)
+                # choose a random nerve to split
+                old = random.choice(self.nerves)
                 new_node = Node()
                 self.nodes.append(new_node) # add new node
-                # set new nerves and remove old
-                self.nerves.append(Nerve(nerve.start, new_node))
-                self.nerves.append(Nerve(new_node, nerve.end))
-                self.nerves.remove(nerve)
+                # make new nerves 
+                first = Nerve(old.start, new_node)
+                second = Nerve(new_node, old.end)
+
+                # keep weights so network remains the same 
+                first.weight = 1.0         
+                second.weight = old.weight  
+
+                # add new and remove old nerves
+                self.nerves.append(first)
+                self.nerves.append(second)
+                self.nerves.remove(old)
                 self.sort_nodes_depth()
 
         # remove a node
@@ -149,9 +158,13 @@ class Network():
             for start in self.nodes:
                 for end in self.nodes:
                     if start.depth < end.depth:
+                        exists = False
                         for nerve in self.nerves:
-                            if not (nerve.start == start and nerve.end == end):
-                                missing.append((start, end))
+                            if nerve.start is start and nerve.end is end:
+                                exists = True
+                                break
+                        if not exists:
+                            missing.append((start, end))
             # add a random selection from missing nerve list if not empty
             if missing != []:
                 new_nerve_spots = random.choice(missing)
