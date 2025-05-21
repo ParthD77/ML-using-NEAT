@@ -233,6 +233,13 @@ class MainWindow(QMainWindow):
         self.label.setPixmap(canvas)
 
 
+# public to display any network
+def display_network(net: Network, width: int = 1200, height: int = 700, x: int = 400, y: int = 150) -> None:
+    app = QApplication([])
+    window = MainWindow(net, x, y, width, height)
+    window.show()
+    app.exec()
+
 
 
 if __name__ == "__main__":
