@@ -88,7 +88,7 @@ class Network():
                 # 10% of weights get mutated
                 to_mutate = math.ceil(len(self.nerves)*0.1)
                 for i in range(to_mutate):
-                    random.choice(self.nerves).mutate_nerve
+                    random.choice(self.nerves).mutate_nerve()
 
         # new node
         elif roll <= 88:

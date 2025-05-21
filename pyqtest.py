@@ -15,9 +15,9 @@ git log origin/main..HEAD   # local has - remote dosent
 
 
     Pull:
-    git pull
-    OR OPTIONAL/FIRST-TIME LINK
-    git pull link
+git pull
+OR OPTIONAL/FIRST-TIME LINK
+git pull link
 
     Push:
 git add .
@@ -43,9 +43,6 @@ git push
 
 """
 TODO:
-    Find a  way to dispaly the network:
-        how to know the height of each node?
-    Implement mutate network
     somehow have a main file (maybe this one?) that has x agents and computes everything and such,
         while  only displaying x network, adjustable values?
 
