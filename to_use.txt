@@ -1,5 +1,0 @@
-To run on your own input data:
-    Create a new class that inherets from main
-    Implement get_fitness:
-        use run_agents()
-    Add activation function

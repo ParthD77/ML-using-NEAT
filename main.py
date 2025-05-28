@@ -80,8 +80,17 @@ class main():
         self.rank_fitness()
         
 
+
+
+    def relu(self, x: float) -> float:
+        return max(0.0, x)
     
-    def get_fitness(self):
+
+    def sigmoid(self, x: float) -> float:
+        return 1 / (1 + math.exp(-x))
+    
+
+    def get_fitness(self) -> None:
         """
         Unimplemented Method
         """

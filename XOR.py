@@ -4,17 +4,12 @@ from main import main
 from pyqtest import display_network
 
 class XORTrainer(main):
-    """
-    Extends your NEAT main() to evaluate XOR fitness.
-    Assumes networks take [bias=1, x1, x2] → 1 output.
-    """
-    def __init__(self, population_size: int = 150):
+
+    def __init__(self, population_size: int = 150) -> None:
         super().__init__(input_size=3, output_size=1, count=population_size)
 
-    def sigmoid(self, x: float) -> float:
-        return 1 / (1 + math.exp(-x))
 
-    def get_fitness(self):
+    def get_fitness(self) -> None:
         self.reset_scores()
         for x1 in (0, 1):
             for x2 in (0, 1):
@@ -28,7 +23,7 @@ class XORTrainer(main):
                         agent.score += 1
         self.rank_fitness()
 
-def print_xor_outputs(network):
+def print_xor_outputs(network) -> None:
     """Prints actual XOR outputs of the given network."""
     print("\nNetwork XOR Evaluation:")
     for x1 in (0, 1):
