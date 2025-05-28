@@ -8,14 +8,15 @@ from main import main  # your NEAT population manager
 from network import Network  # ensure this import matches your Network class path
 from pyqtest import display_network
 
-
+#DISCLAIMER: THE GAME WAS VIBE CODED USING CAHTGPT I DID NOT MAKE MOST OF IT, SOME TWEAKS ARE MINE AND CONNECTING IT TO XOR IS MY WORK
+#basically the game logic and visual arent mine, everything else is
 # --- Flappy Bird Constants ---
 WIN_WIDTH = 500
 WIN_HEIGHT = 800
 BIRD_WIDTH = 34
 BIRD_HEIGHT = 24
-PIPE_WIDTH = 250
-PIPE_GAP = 80
+PIPE_WIDTH_RANGE = (100, 300)
+PIPE_GAP_RANGE = (80, 120)
 PIPE_VEL = 5
 BASE_HEIGHT = 100
 BASE_VEL = 5
@@ -56,26 +57,29 @@ class Bird:
 class Pipe:
     def __init__(self, x: int):
         self.x = x
-        self.height = random.randrange(50, WIN_HEIGHT - PIPE_GAP - BASE_HEIGHT - 50)
+        pipe_gap = random.randint(PIPE_GAP_RANGE[0], PIPE_GAP_RANGE[1])
+        self.height = random.randrange(50, WIN_HEIGHT - pipe_gap - BASE_HEIGHT - 50)
         self.top = self.height
-        self.bottom = self.height + PIPE_GAP
+        self.bottom = self.height + pipe_gap
         self.passed = False
+        self.pipe_width = random.randint(PIPE_WIDTH_RANGE[0], PIPE_WIDTH_RANGE[1])
 
     def update(self):
         self.x -= PIPE_VEL
 
     def collide(self, bird: Bird) -> bool:
+        
         bird_rect = pygame.Rect(bird.x, bird.y, BIRD_WIDTH, BIRD_HEIGHT)
-        top_rect = pygame.Rect(self.x, 0, PIPE_WIDTH, self.top)
-        bottom_rect = pygame.Rect(self.x, self.bottom, PIPE_WIDTH, WIN_HEIGHT - self.bottom)
+        top_rect = pygame.Rect(self.x, 0, self.pipe_width, self.top)
+        bottom_rect = pygame.Rect(self.x, self.bottom, self.pipe_width, WIN_HEIGHT - self.bottom)
         return bird_rect.colliderect(top_rect) or bird_rect.colliderect(bottom_rect)
 
     def off_screen(self) -> bool:
-        return self.x + PIPE_WIDTH < 0
+        return self.x + self.pipe_width < 0
 
     def draw(self, win):
-        pygame.draw.rect(win, (0, 255, 0), (self.x, 0, PIPE_WIDTH, self.top))
-        pygame.draw.rect(win, (0, 255, 0), (self.x, self.bottom, PIPE_WIDTH, WIN_HEIGHT - self.bottom))
+        pygame.draw.rect(win, (0, 255, 0), (self.x, 0, self.pipe_width, self.top))
+        pygame.draw.rect(win, (0, 255, 0), (self.x, self.bottom, self.pipe_width, WIN_HEIGHT - self.bottom))
 
 class Base:
     def __init__(self):
@@ -218,7 +222,7 @@ class Game:
 
                 # next upcoming pipe
                 next_pipe = next((p for p in self.pipes
-                                  if p.x + PIPE_WIDTH > bird.x), None)
+                                  if p.x + p.pipe_width > bird.x), None)
 
                 if next_pipe:
                     inputs = [
