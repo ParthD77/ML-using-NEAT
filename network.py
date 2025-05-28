@@ -154,6 +154,7 @@ class Network():
                         nerves_to_remove.append(nerve)
                 for nerve in nerves_to_remove:
                     self.nerves.remove(nerve)
+                self.nodes.remove(node_to_remove)
                 self.sort_nodes_depth()
             return NODE_GRACE
                         
