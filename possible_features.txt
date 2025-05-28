@@ -1,0 +1,10 @@
+1. Speciation. Currently a single network may take over as it's children may also be best.
+2. Crossover. (not likely ever needed or will be added)
+3. More games to connect to.
+4. A website displaying network and game side by side.
+
+
+
+Game ideas:
+    Evolution with muscles learning to walk
+    Racing game
