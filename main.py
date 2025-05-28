@@ -5,8 +5,6 @@ import copy
 
 """
 Potential  features:
-    Activation function????
-    Adjust the % of agents that surive
 """
 
 class main():
@@ -39,25 +37,32 @@ class main():
         
         self.agents = sorted(self.agents, key=get_network_score, reverse=True)
     
-
-    def new_generation(self, surival_rate: float) -> None:
-        # save surival_rate% of allagents and mutate that 10% to fill the 90% of slots
-        # mutate each agent 9 times and add it
-        spots = len(self.agents)
+    #TODO: LOOK OVER
+    def new_generation(self, survival_rate: float = 0.3) -> None:
         self.rank_fitness()
 
-        num_survivors = max(1, math.ceil(spots * surival_rate))
-        good_agents = self.agents[:num_survivors]
-        self.agents = good_agents[:]
+        top_agents = round(len(self.agents)*survival_rate)
+        survivors = self.agents[:top_agents]
+        for agent in self.agents:
+            if agent.grace > 0 and not (agent in survivors):
+                survivors.append(agent)
+            agent.grace -= 1
 
-        num_to_generate = spots - len(self.agents)
-        multiplier = math.ceil(num_to_generate / len(good_agents))
+        filled = len(survivors)
+        spots = len(self.agents) - filled
+        i = 0
+        self.agents = []
+        while len(self.agents) < spots:
+            agent = survivors[i % filled]
+            agent_copy = copy.deepcopy(agent)
+            mutation_type = agent_copy.mutate_network()
+            agent_copy.grace += mutation_type
+            self.agents.append(agent_copy)
+            i += 1
+        self.agents.extend(survivors)
 
-        for agent in good_agents:
-            for _ in range(multiplier):
-                agent_copy = copy.deepcopy(agent)
-                agent_copy.mutate_network()
-                self.agents.append(agent_copy)
+        self.rank_fitness()
+        
 
     
     def get_fitness(self):
