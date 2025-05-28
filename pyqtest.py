@@ -245,7 +245,7 @@ def display_network(net: Network, width: int = 1200, height: int = 700, x: int =
 if __name__ == "__main__":
     app = QApplication([])
     network = Network(2, 1)
-    for i in range(100):
+    for i in range(40):
         network.mutate_network()
     network.process_network([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
     window = MainWindow(network, 400, 150, 1200, 700)
