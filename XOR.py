@@ -1,48 +1,77 @@
-from main import main
-from network import Network
-from typing import Tuple, List, Dict
-from pyqtest import display_network
+# xor_neat.py
 import math
+from main import main
+from pyqtest import display_network
 
-class XOR(main):
-    agents: List[Network]
-
-    
-    def __init__(self):
-        super().__init__(3, 1, 20)
+class XORTrainer(main):
+    """
+    Extends your NEAT main() to evaluate XOR fitness.
+    Assumes networks take [bias=1, x1, x2] → 1 output.
+    """
+    def __init__(self, population_size: int = 150):
+        super().__init__(input_size=3, output_size=1, count=population_size)
 
     def sigmoid(self, x: float) -> float:
         return 1 / (1 + math.exp(-x))
 
     def get_fitness(self):
         self.reset_scores()
-        for i in range(2):
-            for j in range(2):
-                output = self.run_agents([-1, i, j])
-                xor_result = i ^ j
-                for k in range(len(output)):
-                    result = output[k]
-                    result = self.sigmoid(result[0])
-                    if xor_result == round(result):
-                        self.agents[k].score += 1
-        for agent in self.agents:
-            print(agent.score, len(self.agents))
-        print("--------------------")
+        for x1 in (0, 1):
+            for x2 in (0, 1):
+                inputs = [1, x2, x1]
+                outputs = self.run_agents(inputs)
+                expected = x1 ^ x2
+                for agent, out in zip(self.agents, outputs):
+                    z = out[0]
+                    pred = round(self.sigmoid(z))
+                    if pred == expected:
+                        agent.score += 1
         self.rank_fitness()
-      
 
+def print_xor_outputs(network):
+    """Prints actual XOR outputs of the given network."""
+    print("\nNetwork XOR Evaluation:")
+    for x1 in (0, 1):
+        for x2 in (0, 1):
+            inputs = [1, x1, x2]
+            output = network.process_network(inputs)
+            output = network.get_output()[0]
+            result = 1 / (1 + math.exp(-output))  # sigmoid
+            print(f"  {x1} XOR {x2} → {result:.4f} (rounded: {round(result)})")
+    print()
 
 if __name__ == "__main__":
-    xor = XOR()
-    for i in range(1000):
-        xor.get_fitness()
-        xor.new_generation(0.5) 
+    trainer = XORTrainer(population_size=150)
+    generation = 0
 
-    display_network(xor.agents[13])
-    display_network(xor.agents[0])
+    SURVIVAL_RATE = 0.7
+    i = 0
+    while True:
+        generation += 1
+        trainer.get_fitness()
 
+        scores = [agent.score for agent in trainer.agents]
+        best = max(scores)
+        avg = sum(scores) / len(scores)
 
+        print(f"Generation {generation}")
+        print(f"  Best: {best}, Avg: {avg:.2f} | "
+              f"Agents: {len(trainer.agents)}, "
+              f"Nodes in champion: {len(trainer.agents[0].nodes)} | {(trainer.agents[0].grace)}")
 
+        if best >= 4:
+            print("🎉 Solution found! Displaying best network and XOR outputs...")
+            trainer.rank_fitness()
+            best_net = trainer.agents[0]
+            print_xor_outputs(best_net)
+            display_network(
+                best_net,
+                width=800,
+                height=600,
+                x=100,
+                y=100
+            )
+            break
+        i += 1
 
-
-
+        trainer.new_generation(SURVIVAL_RATE)
