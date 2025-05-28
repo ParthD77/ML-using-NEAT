@@ -17,6 +17,7 @@ class Network():
     nodes: List[Node] 
     nerves: List[Nerve]
     score: int
+    grace: int
 
     def __init__(self, input_size: int = 1, output_size: int = 1) -> None:
         # default network connect all input to output
@@ -37,6 +38,7 @@ class Network():
         self.nerves = nerves
         self.score = 0
         self.set_depth()
+        self.grace = 0
     
 
     # testing initalizer
@@ -86,27 +88,32 @@ class Network():
         return output
 
 
-    def mutate_network(self) -> None:
-        """ Chances of mutation:
-        80% weight mutation (10% of weights get mutated)
-        2% new node
-        2% remove a node
+    def mutate_network(self) -> int:
+        """ Return 0 if mutation adjusted a weight, 
+        3 if mutation altered nerves
+        6 if mutation altered nodes
+        Chances of mutation:
+        75% weight mutation (10% of weights get mutated)
+        10% new node
+        3% remove a node
         8% add a nerve
-        8% remove a nerve
+        4% remove a nerve
         * if mutation is not possible its skipped and no mutation happens
         """
+        NERVE_GRACE = 3
+        NODE_GRACE = 6
         roll = random.randint(1, 100)
         # weight mutation
-        if roll <= 80:
+        if roll <= 75:
             if self.nerves != []:
                 # 10% of weights get mutated
                 to_mutate = math.ceil(len(self.nerves)*0.1)
                 for i in range(to_mutate):
                     random.choice(self.nerves).mutate_nerve()
+            return 0
 
         # new node
-        elif roll <= 88:
-            print("new_nofde")
+        elif roll <= 85:
             # only add node if possible
             if self.nerves != []:
                 # choose a random nerve to split
@@ -126,9 +133,10 @@ class Network():
                 self.nerves.append(second)
                 self.nerves.remove(old)
                 self.sort_nodes_depth()
+            return NODE_GRACE
 
         # remove a node
-        elif roll <= 96: 
+        elif roll <= 88: 
             # only remove node if possible
             internal_nodes = []
             for node in self.nodes:
@@ -147,10 +155,11 @@ class Network():
                 for nerve in nerves_to_remove:
                     self.nerves.remove(nerve)
                 self.sort_nodes_depth()
+            return NODE_GRACE
                         
                 
         # add a nerve
-        elif roll <= 98: 
+        elif roll <= 96: 
             # only add node if possible
             # go thru every possible nerve location and get list of all missing nerves
             # (L time complexity)
@@ -169,11 +178,13 @@ class Network():
             if missing != []:
                 new_nerve_spots = random.choice(missing)
                 self.nerves.append(Nerve(new_nerve_spots[0], new_nerve_spots[1]))
+            return NERVE_GRACE
 
         # only remove nerve if possible
         else:
             if self.nerves != []:
                 self.nerves.remove(random.choice(self.nerves))
+            return NERVE_GRACE
         
     
     def sort_nerves(self) -> None:
@@ -241,11 +252,68 @@ class Network():
         return inputs
 
 
+# ------------------------------------------------------------
+#  HARD-CODED 3-2-1 XOR NETWORK (bias, A, B  →  H1, H2  →  O1)
+# ------------------------------------------------------------
+# ------------------------------------------------------------------
+#  MINIMAL 3-2-1 XOR NETWORK  (feed inputs [1, A, B] → sigmoid out)
+# ------------------------------------------------------------------
+def build_handcrafted_xor_network() -> Network:
+    """
+    Returns a Network that rounds perfectly to XOR:
+        in = [bias(1), A, B]   out ≈ 0 or 1
+    Hidden units:
+        H1 = ReLU( +A − B )
+        H2 = ReLU( −A + B )
+    Output:
+        z = 2·H1 + 2·H2 − 1
+        y = sigmoid(z)
+    """
+
+    # -------- nodes --------
+    bias, A, B = Node(0), Node(0), Node(0)   # three inputs
+    H1, H2     = Node(), Node()              # hidden (ReLU)
+    O1         = Node(2)                     # output (sigmoid)
+    nodes      = [bias, A, B, H1, H2, O1]
+
+    # -------- nerves (connections & weights) --------
+    nerves = [
+        # inputs → hidden
+        Nerve(A, H1),  #  +1
+        Nerve(B, H1),  #  –1
+        Nerve(A, H2),  #  –1
+        Nerve(B, H2),  #  +1
+
+        # hidden → output
+        Nerve(H1, O1), #  +2
+        Nerve(H2, O1), #  +2
+
+        # bias → output
+        Nerve(bias, O1)  #  –1
+    ]
+
+    # assign the exact weights
+    nerves[0].weight = +1   # A  → H1
+    nerves[1].weight = -1   # B  → H1
+    nerves[2].weight = -1   # A  → H2
+    nerves[3].weight = +1   # B  → H2
+    nerves[4].weight = +2   # H1 → O1
+    nerves[5].weight = +2   # H2 → O1
+    nerves[6].weight = -1   # bias → O1
+
+    # -------- package into a Network --------
+    net = Network()                       # dummy constructor
+    net.reinit_custom(nodes, nerves)      # inject topology
+    net.set_depth()
+    net.sort_nodes_depth()
+    net.sort_nerves()
+    return net
 
 
 
 
 if __name__ == "__main__":
+    
     n1, n2, n3, n4, n5 = Node(0), Node(), Node(), Node(), Node(2)
     l1 = Nerve(n1, n2)
     l2 = Nerve(n2, n3)
@@ -255,6 +323,14 @@ if __name__ == "__main__":
     l5 = Nerve(n4, n5)
 
     l6 = Nerve(n4, n3)
+
+    x = -0.5 #test
+    l1.weight = x
+    l2.weight = x
+    l3.weight = x
+    l4.weight = x
+    l5.weight = x
+    l6.weight = x
 
     net = Network()
     net.reinit_custom([n1, n2, n3, n4, n5], [l1, l2,  l3, l4, l5, l6])
@@ -266,7 +342,7 @@ if __name__ == "__main__":
     for node in net.nodes:
         print(node.value)
 
-
+    print("----------------------")
     net2 = Network(2, 2)
     net2.process_network([1, 1])
     for node in net2.nodes:
@@ -278,4 +354,12 @@ if __name__ == "__main__":
 
     # for node in net.nodes:
     #     print(node.value)
+
+    
+
+    # xor = build_handcrafted_xor_network()
+    # for A, B in [(0,0), (0,1), (1,0), (1,1)]:
+    #     xor.process_network([1, A, B])                 # [bias, A, B]
+    #     out = xor.sigmoid(xor.get_output()[0])         # convert last ReLU → sigmoid
+    #     print(f"{A} XOR {B} -> {round(out)}   ({out:.3f})")
 
