@@ -15,12 +15,12 @@ WIN_WIDTH = 500
 WIN_HEIGHT = 800
 BIRD_WIDTH = 34
 BIRD_HEIGHT = 24
-PIPE_WIDTH_RANGE = (100, 300)
+PIPE_WIDTH_RANGE = (100, 200)
 PIPE_GAP_RANGE = (80, 120)
 PIPE_VEL = 5
-BASE_HEIGHT = 100
+BASE_HEIGHT = 30
 BASE_VEL = 5
-FPS = 90
+FPS = 200
 
 class Bird:
     def __init__(self, x: int, y: int, network: Network):
@@ -36,6 +36,10 @@ class Bird:
         self.vel = -10
         self.tick_count = 0
         self.height = self.y
+
+    def move(self, val: int) -> None:
+        if 0 < self.x < WIN_WIDTH/2:
+            self.x += val
 
     def update(self):
         self.tick_count += 1
@@ -58,7 +62,7 @@ class Pipe:
     def __init__(self, x: int):
         self.x = x
         pipe_gap = random.randint(PIPE_GAP_RANGE[0], PIPE_GAP_RANGE[1])
-        self.height = random.randrange(50, WIN_HEIGHT - pipe_gap - BASE_HEIGHT - 50)
+        self.height = random.randrange(10, WIN_HEIGHT - pipe_gap - BASE_HEIGHT - 50)
         self.top = self.height
         self.bottom = self.height + pipe_gap
         self.passed = False
@@ -156,7 +160,7 @@ class Game:
     # ──────────────────────────────────────────────────────────
     def run(self) -> List[int]:
         MAX_FRAMES          = FPS * 100          # ≈ 100 seconds
-        COMPLEXITY_PENALTY  = 0.0001             # fitness -= penalty * (#edges + #nodes)
+        COMPLEXITY_PENALTY  = 0.00001             # fitness -= penalty * (#edges + #nodes)
 
         while any(b.network.alive for b in self.birds):
             # -- timing --
@@ -188,27 +192,28 @@ class Game:
                         # when you close it, the game loop simply continues
 
 
-            # -- spawn pipe every 90 frames (~1.5 s at 60 FPS) --
-            if self.frame % 90 == 0:
+            
+            if self.frame % 70 == 0:
                 self.pipes.append(Pipe(WIN_WIDTH))
 
-            # -- update pipes & scoring --
+       # -- update pipes & scoring --
             rem, add_score = [], False
             for pipe in self.pipes:
                 pipe.update()
                 for bird in self.birds:
                     if bird.network.alive and pipe.collide(bird):
                         bird.network.alive = False
-                    if not pipe.passed and pipe.x < bird.x:
-                        pipe.passed = True
-                        add_score = True
+                        bird.network.score += bird.x
+
                 if pipe.off_screen():
                     rem.append(pipe)
 
-            if add_score:
-                for bird in self.birds:
-                    if bird.network.alive:
-                        bird.network.score += 1
+
+            for bird in self.birds:
+                if bird.network.alive:
+                    bird.network.score += 1
+
+
 
             for r in rem:
                 self.pipes.remove(r)
@@ -229,14 +234,22 @@ class Game:
                         bird.y / WIN_HEIGHT,
                         (bird.y - next_pipe.height) / WIN_HEIGHT,
                         (next_pipe.bottom - bird.y) / WIN_HEIGHT,
-                        next_pipe.x / WIN_WIDTH
+                        (next_pipe.x - bird.x) / WIN_WIDTH
                     ]   
                     bird.network.process_network(inputs)
 
-                    z = bird.network.get_output()[0]
-                    action = round(self._sigmoid(z))
-                    if action == 1:
+                    jump = bird.network.get_output()[0]
+                    jump = round(self._sigmoid(jump))
+                    if jump == 1:
                         bird.jump()
+
+                    move = bird.network.get_output()[1]
+                    if  move > 0.66:  
+                        bird.move(+5)   
+                    elif move < 0.33:  
+                        bird.move(-5)   
+
+
 
                 # death on ground / ceiling
                 if bird.y + BIRD_HEIGHT >= WIN_HEIGHT - BASE_HEIGHT or bird.y <= 0:
@@ -260,7 +273,7 @@ class Game:
 # --- Main Execution: NEAT Loop ---
 
 if __name__ == "__main__":
-    population = main(input_size=4, output_size=1, count=500)
+    population = main(input_size=4, output_size=2, count=1000)
     generation = 0
 
 
