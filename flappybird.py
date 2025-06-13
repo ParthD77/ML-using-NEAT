@@ -15,12 +15,12 @@ WIN_WIDTH = 500
 WIN_HEIGHT = 800
 BIRD_WIDTH = 34
 BIRD_HEIGHT = 24
-PIPE_WIDTH_RANGE = (100, 200)
-PIPE_GAP_RANGE = (80, 120)
+PIPE_WIDTH_RANGE = (100, 160)
+PIPE_GAP_RANGE = (100, 120)
 PIPE_VEL = 5
 BASE_HEIGHT = 30
 BASE_VEL = 5
-FPS = 200
+FPS = 90
 
 class Bird:
     def __init__(self, x: int, y: int, network: Network):
@@ -273,7 +273,7 @@ class Game:
 # --- Main Execution: NEAT Loop ---
 
 if __name__ == "__main__":
-    population = main(input_size=4, output_size=2, count=1000)
+    population = main(input_size=4, output_size=2, count=100)
     generation = 0
 
 
