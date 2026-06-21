@@ -4,7 +4,6 @@ from node import Node
 from nerve import Nerve
 import random
 import math
-import copy
 
 class Network():
     # NOTES:
@@ -37,14 +36,20 @@ class Network():
         self.nodes = nodes
         self.nerves = nerves
         self.score = 0
-        self.set_depth()
         self.grace = 0
+        self.alive = True
+        self._topology_dirty = True
+        self._ordered_nerves = []
+        self.rebuild_topology()
     
 
     # testing initalizer
     def reinit_custom(self, nodes: List[Node], nerves: List[Nerve]) -> None:
         self.nodes = nodes
         self.nerves = nerves
+        self._topology_dirty = True
+        self._ordered_nerves = []
+        self.rebuild_topology()
 
 
     def relu(self, x: float) -> float:
@@ -55,7 +60,10 @@ class Network():
 
 
     def process_network(self, in_data: list[int]) -> None:
-        self.set_depth()
+        self._ensure_topology()
+        if len(in_data) != sum(node.type == 0 for node in self.nodes):
+            raise ValueError("Input count does not match the network input nodes.")
+
         # reset all node values and set input node values
         i = 0
         for node in self.nodes:
@@ -67,10 +75,10 @@ class Network():
             else:
                 node.value = 0
         
-        # sort in nerves start depth first and then process each nerve
-        self.sort_nerves()
+        # Nerves are cached in depth order and only rebuilt after a
+        # structural mutation.
         process_layer = 0
-        for nerve in self.nerves:
+        for nerve in self._ordered_nerves:
             while process_layer < nerve.start.depth:
                 process_layer += 1
                 for node in self.nodes:
@@ -80,12 +88,7 @@ class Network():
     
 
     def get_output(self) -> List[float]:
-        self.sort_nodes_depth()
-        output = []
-        for node in self.nodes:
-            if node.type == 2:
-                output.append(node.value)
-        return output
+        return [node.value for node in self.nodes if node.type == 2]
 
 
     def mutate_network(self) -> int:
@@ -132,7 +135,8 @@ class Network():
                 self.nerves.append(first)
                 self.nerves.append(second)
                 self.nerves.remove(old)
-                self.sort_nodes_depth()
+                self._mark_topology_dirty()
+                self.rebuild_topology()
             return NODE_GRACE
 
         # remove a node
@@ -155,19 +159,25 @@ class Network():
                 for nerve in nerves_to_remove:
                     self.nerves.remove(nerve)
                 self.nodes.remove(node_to_remove)
-                self.sort_nodes_depth()
+                self._mark_topology_dirty()
+                self.rebuild_topology()
             return NODE_GRACE
                         
                 
         # add a nerve
         elif roll <= 96: 
+            self._ensure_topology()
             # only add node if possible
             # go thru every possible nerve location and get list of all missing nerves
             # (L time complexity)
             missing = []
             for start in self.nodes:
                 for end in self.nodes:
-                    if start.depth < end.depth:
+                    if (
+                        start.depth >= 0
+                        and end.type != 0
+                        and start.depth < end.depth
+                    ):
                         exists = False
                         for nerve in self.nerves:
                             if nerve.start is start and nerve.end is end:
@@ -179,12 +189,16 @@ class Network():
             if missing != []:
                 new_nerve_spots = random.choice(missing)
                 self.nerves.append(Nerve(new_nerve_spots[0], new_nerve_spots[1]))
+                self._mark_topology_dirty()
+                self.rebuild_topology()
             return NERVE_GRACE
 
         # only remove nerve if possible
         else:
             if self.nerves != []:
                 self.nerves.remove(random.choice(self.nerves))
+                self._mark_topology_dirty()
+                self.rebuild_topology()
             return NERVE_GRACE
         
     
@@ -192,57 +206,57 @@ class Network():
         """
         Sort based on start node depth
         """
-        self.set_depth()
-        # helper callable
-        def get_nerve_start_depth(nerve: Nerve) -> int:
-            return nerve.start.depth
-        
-        self.nerves = sorted(self.nerves, key=get_nerve_start_depth)
+        self._ensure_topology()
+        self.nerves = list(self._ordered_nerves)
 
 
     def sort_nodes_depth(self) -> None:
-        self.set_depth()
-        # helper callable
-        def get_node_depth(node: Node) -> int:
-            return node.depth
-        
-        self.nodes = sorted(self.nodes, key=get_node_depth)
+        self._ensure_topology()
+        self.nodes.sort(key=lambda node: node.depth)
 
         
     def set_depth(self) -> None:
-        curr = self.reset_depths()
+        self._mark_topology_dirty()
+        self.rebuild_topology()
 
-        # get all input nodes
-        depth = 0
-        next = []
-        for nerve in self.nerves:
-            if nerve.start in curr:
-                next.append(nerve.end)
+    def rebuild_topology(self) -> None:
+        """Recalculate node depths and cached nerve order."""
+        self.reset_depths()
 
-        # set current layers depth and then move to next layer of nodes
-        while next:
-            for node in curr:
-                node.depth = depth
-            curr = next[:]
-            next = []
+        # Repeated relaxation finds the longest reachable path in this DAG.
+        for _ in range(len(self.nodes)):
+            changed = False
             for nerve in self.nerves:
-                if nerve.start in curr:
-                    next.append(nerve.end)
-            depth += 1
+                if nerve.start.depth < 0 or nerve.end.type == 0:
+                    continue
+                new_depth = nerve.start.depth + 1
+                if new_depth > nerve.end.depth:
+                    nerve.end.depth = new_depth
+                    changed = True
+            if not changed:
+                break
 
-        # set final layers depths
-        for node in curr:
-            node.depth = depth
-        curr = next
-
-        # Ensure output nodes are always in the final layer
-        max_depth = max(max((node.depth for node in self.nodes if node.depth != -1)), 1)
+        reachable_depths = [node.depth for node in self.nodes if node.depth >= 0]
+        final_depth = max(max(reachable_depths, default=0), 1)
         for node in self.nodes:
-            if node.type == 2:  # Output node
-                node.depth = max_depth
+            if node.type == 2:
+                node.depth = final_depth
+
+        self._ordered_nerves = sorted(
+            self.nerves,
+            key=lambda nerve: nerve.start.depth,
+        )
+        self._topology_dirty = False
+
+    def _mark_topology_dirty(self) -> None:
+        self._topology_dirty = True
+
+    def _ensure_topology(self) -> None:
+        if getattr(self, "_topology_dirty", True):
+            self.rebuild_topology()
         
 
-    def reset_depths(self) -> None:
+    def reset_depths(self) -> List[Node]:
         # if input then return it, else set to -1 temporarily
         inputs = []
         for node in self.nodes:
